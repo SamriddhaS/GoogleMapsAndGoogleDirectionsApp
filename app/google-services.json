@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "1062477729909",
+    "project_id": "utilityfeatures",
+    "storage_bucket": "utilityfeatures.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062477729909:android:5aa2759d25fd1636d3e83c",
+        "android_client_info": {
+          "package_name": "com.samriddha.googlemapsandgoogledirectionsapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062477729909-sjsib7c2luqmctslml863kli85vcs38r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZOhDRAxAq8snh3fHjPxkhK9ZDGJKPhLs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062477729909-sjsib7c2luqmctslml863kli85vcs38r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1062477729909:android:a36128f3ce8ede4dd3e83c",
+        "android_client_info": {
+          "package_name": "com.samriddha.x10dlayouts"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1062477729909-sjsib7c2luqmctslml863kli85vcs38r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZOhDRAxAq8snh3fHjPxkhK9ZDGJKPhLs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1062477729909-sjsib7c2luqmctslml863kli85vcs38r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
