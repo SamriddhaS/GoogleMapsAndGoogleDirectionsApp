@@ -77,6 +77,7 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
         }
     }
 
+    ///////////// Need to override these methods if we are using map view /////////////////////////////
     override fun onResume() {
         super.onResume()
         mapView.onResume()
