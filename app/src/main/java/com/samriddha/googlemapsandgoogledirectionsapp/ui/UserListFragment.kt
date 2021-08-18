@@ -1,80 +1,109 @@
-package com.samriddha.googlemapsandgoogledirectionsapp.ui;
+package com.samriddha.googlemapsandgoogledirectionsapp.ui
 
-import android.os.Bundle;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.annotation.SuppressLint
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.maps.MapView
+import com.samriddha.googlemapsandgoogledirectionsapp.adapters.UserRecyclerAdapter
+import android.os.Bundle
+import com.samriddha.googlemapsandgoogledirectionsapp.R
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
+import com.samriddha.googlemapsandgoogledirectionsapp.Constants.MAP_VIEW_BUNDLE_KEY
+import com.samriddha.googlemapsandgoogledirectionsapp.models.User
+import com.samriddha.googlemapsandgoogledirectionsapp.ui.UserListFragment
+import java.util.ArrayList
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallback {
 
-import com.samriddha.googlemapsandgoogledirectionsapp.R;
-import com.samriddha.googlemapsandgoogledirectionsapp.adapters.UserRecyclerAdapter;
-import com.samriddha.googlemapsandgoogledirectionsapp.models.User;
-
-import java.util.ArrayList;
-
-public class UserListFragment extends Fragment {
-
-    private static final String TAG = "UserListFragment";
+    private val TAG = "UserListFragment"
 
     //widgets
-    private RecyclerView mUserListRecyclerView;
-
+    private var mUserListRecyclerView: RecyclerView? = null
+    private lateinit var mapView: MapView
 
     //vars
-    private ArrayList<User> mUserList = new ArrayList<>();
-    private UserRecyclerAdapter mUserRecyclerAdapter;
+    private var mUserList: ArrayList<User>? = ArrayList()
+    private var mUserRecyclerAdapter: UserRecyclerAdapter? = null
 
-
-    public static UserListFragment newInstance(){
-        return new UserListFragment();
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        mUserList = requireArguments().getParcelableArrayList(getString(R.string.intent_user_list))
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if(getArguments() != null){
-            mUserList = getArguments().getParcelableArrayList(getString(R.string.intent_user_list));
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        mUserListRecyclerView = view.findViewById(R.id.user_list_recycler_view)
+        mapView = view.findViewById(R.id.user_list_map)
+
+        initUserListRecyclerView()
+        initGoogleMap(savedInstanceState)
+
+    }
+
+    private fun initGoogleMap(savedInstanceState: Bundle?){
+        var mapViewBundle: Bundle? = null
+        if (savedInstanceState != null) {
+            mapViewBundle = savedInstanceState.getBundle(MAP_VIEW_BUNDLE_KEY)
+        }
+
+        mapView.onCreate(mapViewBundle)
+        mapView.getMapAsync(this)
+    }
+
+    @SuppressLint("MissingPermission")
+    override fun onMapReady(map: GoogleMap) {
+        map.addMarker(MarkerOptions().position(LatLng(0.0, 0.0)).title("Marker"))
+        map.isMyLocationEnabled = true
+    }
+
+    private fun initUserListRecyclerView() {
+        mUserRecyclerAdapter = UserRecyclerAdapter(mUserList)
+        mUserListRecyclerView!!.adapter = mUserRecyclerAdapter
+        mUserListRecyclerView!!.layoutManager = LinearLayoutManager(activity)
+    }
+
+    companion object {
+        @JvmStatic
+        fun newInstance(): UserListFragment {
+            return UserListFragment()
         }
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view  = inflater.inflate(R.layout.fragment_user_list, container, false);
-        mUserListRecyclerView = view.findViewById(R.id.user_list_recycler_view);
-
-        initUserListRecyclerView();
-        return view;
+    override fun onResume() {
+        super.onResume()
+        mapView.onResume()
     }
 
+    override fun onStart() {
+        super.onStart()
+        mapView.onStart()
+    }
 
-    private void initUserListRecyclerView(){
-        mUserRecyclerAdapter = new UserRecyclerAdapter(mUserList);
-        mUserListRecyclerView.setAdapter(mUserRecyclerAdapter);
-        mUserListRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+    override fun onStop() {
+        super.onStop()
+        mapView.onStop()
+    }
+
+    override fun onPause() {
+        mapView.onPause()
+        super.onPause()
+    }
+
+    override fun onDestroy() {
+        mapView.onDestroy()
+        super.onDestroy()
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        mapView.onLowMemory()
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
