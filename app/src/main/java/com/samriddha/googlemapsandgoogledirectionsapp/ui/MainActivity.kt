@@ -41,6 +41,7 @@ import com.samriddha.googlemapsandgoogledirectionsapp.models.Chatroom
 import com.samriddha.googlemapsandgoogledirectionsapp.models.User
 import com.samriddha.googlemapsandgoogledirectionsapp.models.UserLocation
 import kotlinx.coroutines.*
+import timber.log.Timber
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -119,10 +120,10 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
         locationRef
             ?.set(userLocation)
             ?.addOnSuccessListener {
-                Log.d(TAG, "user location added successfully to fire store db:$userLocation")
+                Timber.d("user location added successfully to fire store db:$userLocation")
             }
             ?.addOnFailureListener {
-                Log.d(TAG, "Failed to add user location")
+                Timber.d("Failed to add user location")
             }
 
     }
@@ -137,12 +138,12 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
             docReference
                 ?.get()
                 ?.addOnSuccessListener {
-                    Log.d(TAG, "Got the user details")
+                    Timber.d("Got the user details")
                     user = it.toObject(User::class.java)!!
                     continuation.resume(user!!)
                 }
                 ?.addOnFailureListener {
-                    Log.d(TAG, "failed to get user details")
+                    Timber.d("failed to get user details")
                     continuation.resume(null)
                 }
         }
@@ -160,21 +161,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
             currentLocationTask.addOnSuccessListener {
 
                 if (it == null) {
-                    Log.d(TAG, "last location is null start location update")
+                    Timber.d("last location is null start location update")
                     continuation.resume(null)
                 } else {
-                    Log.d(TAG, "Last location ${it.latitude}||${it.longitude}")
+                    Timber.d( "Last location ${it.latitude}||${it.longitude}")
                     geoPoint = GeoPoint(it.latitude, it.longitude)
-                    Log.d(
-                        TAG,
-                        "Last location geopoint ${geoPoint!!.latitude}||${geoPoint!!.longitude}"
-                    )
+                    Timber.d("Last location geopoint ${geoPoint!!.latitude}||${geoPoint!!.longitude}")
                     continuation.resume(geoPoint)
                 }
 
             }.addOnFailureListener {
                 val exception = it
-                Log.d(TAG, "exception $exception")
+                Timber.d("exception $exception")
                 continuation.resume(null)
             }
         }
@@ -201,16 +199,16 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
 
     private fun isPlayServiceAvailable(): Boolean {
 
-        Log.d(TAG, "isServicesOK: checking google services version")
+        Timber.d("isServicesOK: checking google services version")
         val available =
             GoogleApiAvailability.getInstance().isGooglePlayServicesAvailable(this@MainActivity)
         if (available == ConnectionResult.SUCCESS) {
             //everything is fine and the user can make map requests
-            Log.d(TAG, "isServicesOK: Google Play Services is working")
+            Timber.d("isServicesOK: Google Play Services is working")
             return true
         } else if (GoogleApiAvailability.getInstance().isUserResolvableError(available)) {
             //an error occured but we can resolve it
-            Log.d(TAG, "isServicesOK: an error occured but we can fix it")
+            Timber.d("isServicesOK: an error occured but we can fix it")
             val dialog = GoogleApiAvailability.getInstance()
                 .getErrorDialog(this@MainActivity, available, ERROR_DIALOG_REQUEST)
             dialog.show()
@@ -243,7 +241,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        Log.d(TAG, "onActivityResult: called.")
+        Timber.d("onActivityResult: called.")
         /*
          * This part can be used to check if the user enabled gps in the settings or not and take
          * action accordingly but we don't need it here as we are check for the gps inside onResume.
@@ -295,7 +293,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
                 if (grantResults.isNotEmpty()
                     && grantResults[0] == PackageManager.PERMISSION_GRANTED
                 ) {
-                    Log.d(TAG, "Permission granted")
+                    Timber.d("Permission granted")
                     getChatrooms()
                 } else {
                     Toast.makeText(
@@ -327,9 +325,9 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
             .collection(getString(R.string.collection_chatrooms))
         mChatroomEventListener =
             chatroomsCollection.addSnapshotListener(EventListener { queryDocumentSnapshots, e ->
-                Log.d(TAG, "onEvent: called.")
+                Timber.d("onEvent: called.")
                 if (e != null) {
-                    Log.e(TAG, "onEvent: Listen failed.", e)
+                    Timber.e(e, "onEvent: Listen failed.")
                     return@EventListener
                 }
                 if (queryDocumentSnapshots != null) {
@@ -340,7 +338,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
                             mChatrooms.add(chatroom)
                         }
                     }
-                    Log.d(TAG, "onEvent: number of chatrooms: " + mChatrooms.size)
+                    Timber.d("onEvent: number of chatrooms: ${mChatrooms.size}")
                     mChatroomRecyclerAdapter!!.notifyDataSetChanged()
                 }
             })

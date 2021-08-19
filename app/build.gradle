@@ -73,4 +73,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.3.1"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.3.1"
 
+    // Timber
+    implementation 'com.jakewharton.timber:timber:4.7.1'
+
 }
