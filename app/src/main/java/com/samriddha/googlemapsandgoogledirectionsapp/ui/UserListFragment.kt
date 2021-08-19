@@ -16,21 +16,28 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.maps.android.clustering.ClusterManager
 import com.samriddha.googlemapsandgoogledirectionsapp.Constants.MAP_VIEW_BUNDLE_KEY
+import com.samriddha.googlemapsandgoogledirectionsapp.models.ClusterMarker
 import com.samriddha.googlemapsandgoogledirectionsapp.models.User
 import com.samriddha.googlemapsandgoogledirectionsapp.models.UserLocation
+import com.samriddha.googlemapsandgoogledirectionsapp.utils.MyClusterRenderer
 import timber.log.Timber
 import java.util.ArrayList
 
-class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallback {
+class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallback {
 
     private val TAG = "UserListFragment"
 
     // google maps
     private lateinit var mapView: MapView
     private lateinit var googleMap: GoogleMap
-    private lateinit var mMapBoundary:LatLngBounds
-    private lateinit var currentUserLocation:UserLocation
+    private lateinit var mMapBoundary: LatLngBounds
+    private lateinit var currentUserLocation: UserLocation
+    private var mClusterManager: ClusterManager<ClusterMarker>? = null
+    private var myClusterRenderer: MyClusterRenderer? = null
+    private var mClusterMarkers: ArrayList<ClusterMarker> = ArrayList()
+
 
     //widgets
     private var mUserListRecyclerView: RecyclerView? = null
@@ -43,7 +50,8 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mUserList = requireArguments().getParcelableArrayList(getString(R.string.intent_user_list))
-        mUserLocationList = requireArguments().getParcelableArrayList(getString(R.string.intent_user_locations))!!
+        mUserLocationList =
+            requireArguments().getParcelableArrayList(getString(R.string.intent_user_locations))!!
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -63,7 +71,7 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
 
     }
 
-    private fun initGoogleMap(savedInstanceState: Bundle?){
+    private fun initGoogleMap(savedInstanceState: Bundle?) {
         var mapViewBundle: Bundle? = null
         if (savedInstanceState != null) {
             mapViewBundle = savedInstanceState.getBundle(MAP_VIEW_BUNDLE_KEY)
@@ -81,22 +89,66 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
         // initialise google map object when the map is ready
         googleMap = map
 
-        setCameraView()
+        //addNormalMarkersToUsersLocation()
 
-        addMarkersToUsersLocation()
+        addCustomMarkerToUserLocation()
+
+        setCameraView()
     }
 
-    private fun addMarkersToUsersLocation() {
+    private fun addCustomMarkerToUserLocation() {
+        googleMap?.let {
+
+            if (mClusterManager == null) {
+                mClusterManager =
+                    ClusterManager<ClusterMarker>(requireActivity().applicationContext, it)
+            }
+
+            if (myClusterRenderer == null) {
+                myClusterRenderer = MyClusterRenderer(
+                    requireActivity().applicationContext,
+                    it,
+                    mClusterManager
+                )
+            }
+
+            mClusterManager?.renderer = myClusterRenderer
+
+            mUserLocationList.forEach { location ->
+                val snipite = if (location.user?.user_id == currentUserLocation.user?.user_id) "Its me"
+                else "I am ${location.user?.username}"
+
+                var image = R.drawable.cwm_logo
+                if (location.user?.avatar!=null) image = location.user?.avatar!!.toInt()
+
+                val newClusterMarker = ClusterMarker(
+                    position = LatLng(location.geoPoint?.latitude!!,location.geoPoint?.longitude!!),
+                    snippet = snipite,
+                    user = location.user!!,
+                    markerIcon = image,
+                    title = location.user?.username!!
+                )
+
+                mClusterManager!!.addItem(newClusterMarker)
+                mClusterMarkers.add(newClusterMarker)
+                Timber.d("added user ${location.user?.username}")
+            }
+
+            mClusterManager?.cluster()
+        }
+    }
+
+    private fun addNormalMarkersToUsersLocation() {
         mUserLocationList.forEach {
             googleMap.addMarker(
                 MarkerOptions()
-                    .position(LatLng(it.geoPoint?.latitude!!,it.geoPoint?.longitude!!))
+                    .position(LatLng(it.geoPoint?.latitude!!, it.geoPoint?.longitude!!))
                     .title(it.user?.username)
             )
         }
     }
 
-    private fun setCameraView(){
+    private fun setCameraView() {
         //setCameraToCurrentUsersLocation()
         setCameraToCenterOfAllUserLocation()
     }
@@ -108,7 +160,7 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
         * */
         val mMapBoundaryBuilder = LatLngBounds.builder()
         mUserLocationList.forEach {
-            mMapBoundaryBuilder.include(LatLng(it.geoPoint?.latitude!!,it.geoPoint?.longitude!!))
+            mMapBoundaryBuilder.include(LatLng(it.geoPoint?.latitude!!, it.geoPoint?.longitude!!))
         }
         mMapBoundary = mMapBoundaryBuilder.build()
 
@@ -116,7 +168,7 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
         //googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(mMapBoundary,0))
     }
 
-    private fun setCameraToCurrentUsersLocation(){
+    private fun setCameraToCurrentUsersLocation() {
         /*
         * This will zoom the map to the current users location.
         * We are using current user's lat and lang and adding 0.1 so we can get
@@ -129,11 +181,11 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
         val rightBoundary = currentUserLocation.geoPoint?.longitude?.plus(0.1)
 
         mMapBoundary = LatLngBounds(
-            LatLng(bottomBoundary!!,leftBoundary!!),
-            LatLng(topBoundary!!,rightBoundary!!)
+            LatLng(bottomBoundary!!, leftBoundary!!),
+            LatLng(topBoundary!!, rightBoundary!!)
         )
 
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(mMapBoundary,0))
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(mMapBoundary, 0))
     }
 
     private fun initUserListRecyclerView() {
@@ -144,13 +196,12 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
 
     private fun findAndSetTheCurrentUser() {
         mUserLocationList.forEach {
-
             /*
             * Loop through the all chatroom user's location list and match with
             * FirebaseAuth current uid to find out who is the current user(using the device)
             * among all the chat room's user list
             * */
-            if (it.user?.user_id==FirebaseAuth.getInstance().uid){
+            if (it.user?.user_id == FirebaseAuth.getInstance().uid) {
                 currentUserLocation = it
                 Timber.d("Found the current user ${it.user?.username}")
             }
