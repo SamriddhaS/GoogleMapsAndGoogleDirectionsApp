@@ -35,6 +35,7 @@ import com.samriddha.googlemapsandgoogledirectionsapp.Constants.ERROR_DIALOG_REQ
 import com.samriddha.googlemapsandgoogledirectionsapp.Constants.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
 import com.samriddha.googlemapsandgoogledirectionsapp.Constants.PERMISSIONS_REQUEST_ENABLE_GPS
 import com.samriddha.googlemapsandgoogledirectionsapp.R
+import com.samriddha.googlemapsandgoogledirectionsapp.UserClient
 import com.samriddha.googlemapsandgoogledirectionsapp.adapters.ChatroomRecyclerAdapter
 import com.samriddha.googlemapsandgoogledirectionsapp.adapters.ChatroomRecyclerAdapter.ChatroomRecyclerClickListener
 import com.samriddha.googlemapsandgoogledirectionsapp.models.Chatroom
@@ -47,8 +48,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecyclerClickListener {
-
-    private val TAG = "MainActivity"
 
     //widgets
     private var mProgressBar: ProgressBar? = null
@@ -86,7 +85,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
 
     override fun onResume() {
         super.onResume()
-        Log.d(TAG, "onResumed")
+        Timber.d("onResumed")
         if (checkAllRequirementsForMap()) {
             getChatrooms()
             insertUserLocationToDb()
@@ -95,21 +94,34 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
 
     private fun insertUserLocationToDb(){
         lifecycleScope.launch {
+
             if (userLocation==null){
 
+                /*We only want to get user's general details from the fire store db
+                * once when the app starts. Then we don't want to fetch it when onResume
+                * is called every time.
+                * */
+                userLocation = UserLocation()
+
                 val user = getUserDetailsFromFireStoreDb()
-                Log.d(TAG, "User details:${user}")
-                val geoPointLocation = getLastLocation()
-                Log.d(TAG, "User last location:$geoPointLocation")
-
-                if (user != null && geoPointLocation != null) {
-                    userLocation = UserLocation()
+                Timber.d("User details:${user}")
+                if (user != null) {
+                    (applicationContext as UserClient).user = user
                     userLocation?.user = user
-                    userLocation?.geoPoint = geoPointLocation
-                    saveUserLocationToDb(userLocation!!)
                 }
-
             }
+
+            /*We do want to update the user location every time time
+            * the onResume is called so it is outside of the if(userLocation==null){} block
+            * */
+            val geoPointLocation = getLastLocation()
+            Timber.d( "User last location:$geoPointLocation")
+
+            if (geoPointLocation != null) {
+                userLocation?.geoPoint = geoPointLocation
+                saveUserLocationToDb(userLocation!!)
+            }
+
         }
     }
 

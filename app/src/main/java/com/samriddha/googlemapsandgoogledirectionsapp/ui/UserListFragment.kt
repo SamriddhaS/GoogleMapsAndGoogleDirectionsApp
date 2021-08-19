@@ -17,7 +17,9 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.samriddha.googlemapsandgoogledirectionsapp.Constants.MAP_VIEW_BUNDLE_KEY
 import com.samriddha.googlemapsandgoogledirectionsapp.models.User
+import com.samriddha.googlemapsandgoogledirectionsapp.models.UserLocation
 import com.samriddha.googlemapsandgoogledirectionsapp.ui.UserListFragment
+import timber.log.Timber
 import java.util.ArrayList
 
 class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallback {
@@ -30,11 +32,13 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
 
     //vars
     private var mUserList: ArrayList<User>? = ArrayList()
+    private var mUserLocationList: ArrayList<UserLocation> = ArrayList()
     private var mUserRecyclerAdapter: UserRecyclerAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mUserList = requireArguments().getParcelableArrayList(getString(R.string.intent_user_list))
+        mUserLocationList = requireArguments().getParcelableArrayList(getString(R.string.intent_user_locations))!!
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -45,6 +49,10 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
 
         initUserListRecyclerView()
         initGoogleMap(savedInstanceState)
+
+        mUserLocationList.forEach {
+            Timber.d("User Location ${it.user?.username} lat:${it.geoPoint?.latitude} lng:${it.geoPoint?.longitude}")
+        }
 
     }
 
