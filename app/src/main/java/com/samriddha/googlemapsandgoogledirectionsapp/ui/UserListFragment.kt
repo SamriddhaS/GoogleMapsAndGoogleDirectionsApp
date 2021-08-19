@@ -6,19 +6,19 @@ import com.google.android.gms.maps.MapView
 import com.samriddha.googlemapsandgoogledirectionsapp.adapters.UserRecyclerAdapter
 import android.os.Bundle
 import com.samriddha.googlemapsandgoogledirectionsapp.R
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
+import com.google.firebase.auth.FirebaseAuth
 import com.samriddha.googlemapsandgoogledirectionsapp.Constants.MAP_VIEW_BUNDLE_KEY
 import com.samriddha.googlemapsandgoogledirectionsapp.models.User
 import com.samriddha.googlemapsandgoogledirectionsapp.models.UserLocation
-import com.samriddha.googlemapsandgoogledirectionsapp.ui.UserListFragment
 import timber.log.Timber
 import java.util.ArrayList
 
@@ -26,9 +26,14 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
 
     private val TAG = "UserListFragment"
 
+    // google maps
+    private lateinit var mapView: MapView
+    private lateinit var googleMap: GoogleMap
+    private lateinit var mMapBoundary:LatLngBounds
+    private lateinit var currentUserLocation:UserLocation
+
     //widgets
     private var mUserListRecyclerView: RecyclerView? = null
-    private lateinit var mapView: MapView
 
     //vars
     private var mUserList: ArrayList<User>? = ArrayList()
@@ -54,6 +59,8 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
             Timber.d("User Location ${it.user?.username} lat:${it.geoPoint?.latitude} lng:${it.geoPoint?.longitude}")
         }
 
+        findAndSetTheCurrentUser()
+
     }
 
     private fun initGoogleMap(savedInstanceState: Bundle?){
@@ -68,14 +75,86 @@ class UserListFragment : Fragment(R.layout.fragment_user_list),OnMapReadyCallbac
 
     @SuppressLint("MissingPermission")
     override fun onMapReady(map: GoogleMap) {
-        map.addMarker(MarkerOptions().position(LatLng(0.0, 0.0)).title("Marker"))
+        // set my location enable to user's current location
         map.isMyLocationEnabled = true
+
+        // initialise google map object when the map is ready
+        googleMap = map
+
+        setCameraView()
+
+        addMarkersToUsersLocation()
+    }
+
+    private fun addMarkersToUsersLocation() {
+        mUserLocationList.forEach {
+            googleMap.addMarker(
+                MarkerOptions()
+                    .position(LatLng(it.geoPoint?.latitude!!,it.geoPoint?.longitude!!))
+                    .title(it.user?.username)
+            )
+        }
+    }
+
+    private fun setCameraView(){
+        //setCameraToCurrentUsersLocation()
+        setCameraToCenterOfAllUserLocation()
+    }
+
+    private fun setCameraToCenterOfAllUserLocation() {
+
+        /*
+        * This will zoom the map to the a center location of all the users.
+        * */
+        val mMapBoundaryBuilder = LatLngBounds.builder()
+        mUserLocationList.forEach {
+            mMapBoundaryBuilder.include(LatLng(it.geoPoint?.latitude!!,it.geoPoint?.longitude!!))
+        }
+        mMapBoundary = mMapBoundaryBuilder.build()
+
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(mMapBoundary.center, 12f))
+        //googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(mMapBoundary,0))
+    }
+
+    private fun setCameraToCurrentUsersLocation(){
+        /*
+        * This will zoom the map to the current users location.
+        * We are using current user's lat and lang and adding 0.1 so we can get
+        * a little zoom out view with the current user's location.
+        * */
+
+        val bottomBoundary = currentUserLocation.geoPoint?.latitude?.minus(0.1)
+        val leftBoundary = currentUserLocation.geoPoint?.longitude?.minus(0.1)
+        val topBoundary = currentUserLocation.geoPoint?.latitude?.plus(0.1)
+        val rightBoundary = currentUserLocation.geoPoint?.longitude?.plus(0.1)
+
+        mMapBoundary = LatLngBounds(
+            LatLng(bottomBoundary!!,leftBoundary!!),
+            LatLng(topBoundary!!,rightBoundary!!)
+        )
+
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(mMapBoundary,0))
     }
 
     private fun initUserListRecyclerView() {
         mUserRecyclerAdapter = UserRecyclerAdapter(mUserList)
         mUserListRecyclerView!!.adapter = mUserRecyclerAdapter
         mUserListRecyclerView!!.layoutManager = LinearLayoutManager(activity)
+    }
+
+    private fun findAndSetTheCurrentUser() {
+        mUserLocationList.forEach {
+
+            /*
+            * Loop through the all chatroom user's location list and match with
+            * FirebaseAuth current uid to find out who is the current user(using the device)
+            * among all the chat room's user list
+            * */
+            if (it.user?.user_id==FirebaseAuth.getInstance().uid){
+                currentUserLocation = it
+                Timber.d("Found the current user ${it.user?.username}")
+            }
+        }
     }
 
     companion object {
