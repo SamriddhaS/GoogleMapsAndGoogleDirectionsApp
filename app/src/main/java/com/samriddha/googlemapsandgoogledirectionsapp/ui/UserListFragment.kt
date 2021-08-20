@@ -7,21 +7,25 @@ import com.samriddha.googlemapsandgoogledirectionsapp.adapters.UserRecyclerAdapt
 import android.os.Bundle
 import com.samriddha.googlemapsandgoogledirectionsapp.R
 import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.maps.android.clustering.ClusterManager
+import com.google.maps.android.ui.IconGenerator
 import com.samriddha.googlemapsandgoogledirectionsapp.Constants.MAP_VIEW_BUNDLE_KEY
 import com.samriddha.googlemapsandgoogledirectionsapp.models.ClusterMarker
 import com.samriddha.googlemapsandgoogledirectionsapp.models.User
 import com.samriddha.googlemapsandgoogledirectionsapp.models.UserLocation
-import com.samriddha.googlemapsandgoogledirectionsapp.utils.MyClusterRenderer
 import com.samriddha.googlemapsandgoogledirectionsapp.utils.MyClusterRendererWithView
 import timber.log.Timber
 import java.util.ArrayList
@@ -90,14 +94,20 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
         // initialise google map object when the map is ready
         googleMap = map
 
-        //addNormalMarkersToUsersLocation()
-
-        addCustomMarkerToUserLocation()
+        addMarkers()
 
         setCameraView()
     }
 
-    private fun addCustomMarkerToUserLocation() {
+    private fun addMarkers() {
+        //addDefaultMarkers()
+
+        addCustomMarkersUsingIconGenerator()
+
+        //addCustomMarkerUsingClusterManager()
+    }
+
+    private fun addCustomMarkerUsingClusterManager() {
         googleMap?.let {
 
             if (mClusterManager == null) {
@@ -139,15 +149,43 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
         }
     }
 
-    private fun addNormalMarkersToUsersLocation() {
+    private fun addCustomMarkersUsingIconGenerator() {
         mUserLocationList.forEach {
+
+            val view: View = View.inflate(requireContext(),R.layout.layout_custom_marker,null)
+            val iconGenerator = IconGenerator(requireContext().applicationContext)
+            val markerWidth  = requireContext().resources?.getDimension(R.dimen.custom_marker_view_width)?.toInt()
+            val markerHeight  = requireContext().resources?.getDimension(R.dimen.custom_marker_view_height)?.toInt()
+
+            view.layoutParams = ViewGroup.LayoutParams(markerWidth!!,markerHeight!!)
+            iconGenerator.setContentView(view)
+
+            view.findViewById<TextView>(R.id.tv_name).text = it.user?.username
+            view.findViewById<TextView>(R.id.tv_email).text = it.user?.email
+            view.findViewById<ImageView>(R.id.imageView).setImageResource(R.drawable.chef)
+
+            googleMap.addMarker(
+                MarkerOptions()
+                    .position(LatLng(it.geoPoint?.latitude!!, it.geoPoint?.longitude!!))
+                    .icon(BitmapDescriptorFactory.fromBitmap(iconGenerator.makeIcon()))
+                    .title(it.user?.username)
+                    .snippet("Its ${it.user?.username}")
+            )
+        }
+    }
+
+    private fun addDefaultMarkers() {
+        mUserLocationList.forEach {
+
             googleMap.addMarker(
                 MarkerOptions()
                     .position(LatLng(it.geoPoint?.latitude!!, it.geoPoint?.longitude!!))
                     .title(it.user?.username)
+                    .snippet("Its ${it.user?.username}")
             )
         }
     }
+
 
     private fun setCameraView() {
         //setCameraToCurrentUsersLocation()
