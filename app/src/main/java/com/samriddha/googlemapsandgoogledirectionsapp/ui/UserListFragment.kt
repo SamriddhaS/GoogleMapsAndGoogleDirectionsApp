@@ -32,8 +32,6 @@ import java.util.ArrayList
 
 class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallback {
 
-    private val TAG = "UserListFragment"
-
     // google maps
     private lateinit var mapView: MapView
     private lateinit var googleMap: GoogleMap

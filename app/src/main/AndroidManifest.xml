@@ -29,6 +29,10 @@
             </intent-filter>
         </activity>
 
+        <service android:name=".ui.LocationService"
+            android:stopWithTask="true"
+            />
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="${api_key}" />
