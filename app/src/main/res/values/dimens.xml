@@ -2,4 +2,7 @@
 <resources>
     <dimen name="custom_marker_image">50dp</dimen>
     <dimen name="custom_marker_padding">2dp</dimen>
+
+    <dimen name="custom_marker_view_height">60dp</dimen>
+    <dimen name="custom_marker_view_width">120dp</dimen>
 </resources>

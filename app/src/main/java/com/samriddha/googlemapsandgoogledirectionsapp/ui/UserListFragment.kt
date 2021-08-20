@@ -22,6 +22,7 @@ import com.samriddha.googlemapsandgoogledirectionsapp.models.ClusterMarker
 import com.samriddha.googlemapsandgoogledirectionsapp.models.User
 import com.samriddha.googlemapsandgoogledirectionsapp.models.UserLocation
 import com.samriddha.googlemapsandgoogledirectionsapp.utils.MyClusterRenderer
+import com.samriddha.googlemapsandgoogledirectionsapp.utils.MyClusterRendererWithView
 import timber.log.Timber
 import java.util.ArrayList
 
@@ -35,7 +36,7 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
     private lateinit var mMapBoundary: LatLngBounds
     private lateinit var currentUserLocation: UserLocation
     private var mClusterManager: ClusterManager<ClusterMarker>? = null
-    private var myClusterRenderer: MyClusterRenderer? = null
+    private var myClusterRenderer: MyClusterRendererWithView? = null
     private var mClusterMarkers: ArrayList<ClusterMarker> = ArrayList()
 
 
@@ -105,7 +106,7 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
             }
 
             if (myClusterRenderer == null) {
-                myClusterRenderer = MyClusterRenderer(
+                myClusterRenderer = MyClusterRendererWithView(
                     requireActivity().applicationContext,
                     it,
                     mClusterManager
