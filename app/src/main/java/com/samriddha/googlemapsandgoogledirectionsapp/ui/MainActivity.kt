@@ -2,11 +2,14 @@ package com.samriddha.googlemapsandgoogledirectionsapp.ui
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.ActivityManager
 import android.app.AlertDialog
+import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputType
@@ -92,20 +95,18 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
         }
     }
 
-    private fun insertUserLocationToDb(){
+    private fun insertUserLocationToDb() {
         lifecycleScope.launch {
 
-            if (userLocation==null){
-
+            if (userLocation == null) {
                 /*We only want to get user's general details from the fire store db
                 * once when the app starts. Then we don't want to fetch it when onResume
                 * is called every time.
                 * */
-                userLocation = UserLocation()
-
                 val user = getUserDetailsFromFireStoreDb()
                 Timber.d("User details:${user}")
                 if (user != null) {
+                    userLocation = UserLocation()
                     (applicationContext as UserClient).user = user
                     userLocation?.user = user
                 }
@@ -115,11 +116,15 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
             * the onResume is called so it is outside of the if(userLocation==null){} block
             * */
             val geoPointLocation = getLastLocation()
-            Timber.d( "User last location:$geoPointLocation")
+            Timber.d("User last location:$geoPointLocation")
 
-            if (geoPointLocation != null) {
+            if (geoPointLocation != null && userLocation != null) {
                 userLocation?.geoPoint = geoPointLocation
                 saveUserLocationToDb(userLocation!!)
+            }
+
+            if ((applicationContext as UserClient).user != null) {
+                startLocationService()
             }
 
         }
@@ -176,7 +181,7 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
                     Timber.d("last location is null start location update")
                     continuation.resume(null)
                 } else {
-                    Timber.d( "Last location ${it.latitude}||${it.longitude}")
+                    Timber.d("Last location ${it.latitude}||${it.longitude}")
                     geoPoint = GeoPoint(it.latitude, it.longitude)
                     Timber.d("Last location geopoint ${geoPoint!!.latitude}||${geoPoint!!.longitude}")
                     continuation.resume(geoPoint)
@@ -266,6 +271,25 @@ class MainActivity : AppCompatActivity(), View.OnClickListener, ChatroomRecycler
                 }
             }
         }
+    }
+
+    private fun startLocationService() {
+        if (!this.isMyServiceRunning(LocationService::class.java)) {
+            //start the location service
+            Timber.d("start location service called")
+            val serviceIntent = Intent(this, LocationService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                this.startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        }
+    }
+
+    private fun Context.isMyServiceRunning(serviceClass: Class<*>): Boolean {
+        val manager = this.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        return manager.getRunningServices(Integer.MAX_VALUE)
+            .any { it.service.className == serviceClass.name }
     }
 
     private fun hasLocationPermission(): Boolean {

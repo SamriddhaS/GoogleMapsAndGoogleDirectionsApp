@@ -28,12 +28,23 @@ import timber.log.Timber
 
 class LocationService : Service() {
 
+    /*
+    * For making location request using google play service
+    * */
     private val fusedLocationClient: FusedLocationProviderClient by lazy {
         LocationServices.getFusedLocationProviderClient(this)
     }
 
+    /*
+    * This live data is used to catch the location from location callback
+    * */
     private val locationLiveData = MutableLiveData<GeoPoint>()
 
+    /*
+    * This observer will be attached with the locationLiveData.
+    * This observer will be triggred everytime the livedata is updated with a new location.
+    *
+    * */
     private val observer by lazy {
         Observer<GeoPoint> {
             // save location to db
@@ -45,6 +56,10 @@ class LocationService : Service() {
         }
     }
 
+    /*
+    * location callback which is used with fusedLocationClient,this callback is executed
+    * everytime a new location is fetched.The live data is updated when this callback is called.
+    * */
     private val locationCallBack by lazy {
         object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
@@ -59,12 +74,18 @@ class LocationService : Service() {
         }
     }
 
+    /*
+    * To be used with fusedLocationClient
+    * */
     private val locationRequest = LocationRequest.create().apply {
         interval = LOCATION_UPDATE_INTERVAL
         priority = LocationRequest.PRIORITY_HIGH_ACCURACY
         fastestInterval = LOCATION_FASTEST_INTERVAL
     }
 
+    /*
+    * Fire store instance
+    * */
     private val mDb by lazy {
         FirebaseFirestore.getInstance()
     }
@@ -111,8 +132,14 @@ class LocationService : Service() {
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
+        /*
+        * Stop the location updates and remove the livedata observer once
+        * the service is stopped.
+        * */
+        Timber.d("Stop location service")
         stopLocationUpdates()
         removeObserver()
+        stopSelf()
         return true
     }
 
