@@ -14,6 +14,10 @@ data class ClusterMarker(
         return position
     }
 
+    fun setPosition(latLng: LatLng){
+        this.position = latLng
+    }
+
     override fun getTitle(): String {
         return title
     }

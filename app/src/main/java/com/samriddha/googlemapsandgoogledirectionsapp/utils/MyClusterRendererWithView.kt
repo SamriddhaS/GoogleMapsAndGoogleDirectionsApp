@@ -15,6 +15,7 @@ import com.google.maps.android.clustering.view.DefaultClusterRenderer
 import com.google.maps.android.ui.IconGenerator
 import com.samriddha.googlemapsandgoogledirectionsapp.R
 import com.samriddha.googlemapsandgoogledirectionsapp.models.ClusterMarker
+import timber.log.Timber
 
 class MyClusterRendererWithView(
     val context: Context,
@@ -44,5 +45,14 @@ class MyClusterRendererWithView(
 
     override fun shouldRenderAsCluster(cluster: Cluster<ClusterMarker>): Boolean {
         return false
+    }
+
+    fun setUpdateMarker(clusterMarker: ClusterMarker){
+        val marker = getMarker(clusterMarker)
+        Timber.d("set update marker0 ${clusterMarker.title} ${clusterMarker.position}")
+        marker?.let {
+            it.position = clusterMarker.position
+            Timber.d("set update marker ${it.title} ${it.position}")
+        }
     }
 }

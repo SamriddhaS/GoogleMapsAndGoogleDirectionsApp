@@ -5,6 +5,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.gms.maps.MapView
 import com.samriddha.googlemapsandgoogledirectionsapp.adapters.UserRecyclerAdapter
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import com.samriddha.googlemapsandgoogledirectionsapp.R
 import android.view.View
 import android.view.ViewGroup
@@ -20,8 +22,10 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MarkerOptions
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.maps.android.clustering.ClusterManager
 import com.google.maps.android.ui.IconGenerator
+import com.samriddha.googlemapsandgoogledirectionsapp.Constants.LOCATION_UPDATE_INTERVAL
 import com.samriddha.googlemapsandgoogledirectionsapp.Constants.MAP_VIEW_BUNDLE_KEY
 import com.samriddha.googlemapsandgoogledirectionsapp.models.ClusterMarker
 import com.samriddha.googlemapsandgoogledirectionsapp.models.User
@@ -49,6 +53,12 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
     private var mUserList: ArrayList<User>? = ArrayList()
     private var mUserLocationList: ArrayList<UserLocation> = ArrayList()
     private var mUserRecyclerAdapter: UserRecyclerAdapter? = null
+
+    private var mRunnable:Runnable?=null
+    private val mHandler by lazy {
+        Handler(Looper.getMainLooper())
+    }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,9 +110,9 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
     private fun addMarkers() {
         //addDefaultMarkers()
 
-        addCustomMarkersUsingIconGenerator()
+        //addCustomMarkersUsingIconGenerator()
 
-        //addCustomMarkerUsingClusterManager()
+        addCustomMarkerUsingClusterManager()
     }
 
     private fun addCustomMarkerUsingClusterManager() {
@@ -245,6 +255,47 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
         }
     }
 
+    private fun startUpdatingUserLocation() {
+
+        mRunnable = Runnable {
+            retrieveUserLocationFromDb()
+            mHandler.postDelayed(mRunnable!!,LOCATION_UPDATE_INTERVAL)
+        }
+        mHandler.postDelayed( mRunnable!!,LOCATION_UPDATE_INTERVAL)
+    }
+
+    private fun stopUpdatingUerLocation() = mHandler.removeCallbacks(mRunnable!!)
+
+    private fun retrieveUserLocationFromDb() {
+        Timber.d("retrieve user location")
+        val locationsRef = FirebaseFirestore
+            .getInstance()
+            .collection(getString(R.string.collection_user_locations))
+        mClusterMarkers.forEach { marker ->
+
+            val userLocationRef = locationsRef.document(marker.user.user_id)
+            userLocationRef.get().addOnSuccessListener { docSnapshot->
+
+                Timber.d("location retrieved user ${marker.user.username}")
+                val updatedLocation = docSnapshot.toObject(UserLocation::class.java)
+
+                mClusterMarkers.forEachIndexed { index, clusterMarker ->
+                    if(clusterMarker.user.user_id==updatedLocation?.user?.user_id){
+
+                        val latlang = LatLng(updatedLocation?.geoPoint?.latitude!!,updatedLocation.geoPoint?.longitude!!)
+                        Timber.d("new location for ${clusterMarker.user.username} $latlang")
+                        mClusterMarkers[index].position = latlang
+                        myClusterRenderer?.setUpdateMarker(mClusterMarkers[index])
+                    }
+                }
+
+            }.addOnFailureListener {
+                Timber.d("location retrieve failed user ${marker.user.username} ${it.message}")
+            }
+
+        }
+    }
+
     companion object {
         @JvmStatic
         fun newInstance(): UserListFragment {
@@ -256,6 +307,7 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
     override fun onResume() {
         super.onResume()
         mapView.onResume()
+        startUpdatingUserLocation()
     }
 
     override fun onStart() {
@@ -266,6 +318,7 @@ class UserListFragment : Fragment(R.layout.fragment_user_list), OnMapReadyCallba
     override fun onStop() {
         super.onStop()
         mapView.onStop()
+        stopUpdatingUerLocation()
     }
 
     override fun onPause() {
